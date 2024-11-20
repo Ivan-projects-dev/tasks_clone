@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Импорт для форматирования даты и времени
+import 'package:intl/intl.dart';
 
 void main() {
   runApp(const MyApp());
@@ -40,9 +40,25 @@ class _TaskHomePageState extends State<TaskHomePage> {
           'completed': false,
           'dateTime': dateTime,
         });
+        _sortTasks();
       });
       _taskController.clear();
     }
+  }
+
+  void _sortTasks() {
+    _tasks.sort((a, b) {
+      if (a['dateTime'] == null && b['dateTime'] == null) {
+        return 0;
+      } else if (a['dateTime'] == null) {
+        return -1;
+      } else if (b['dateTime'] == null) {
+        return 1;
+      } else {
+        return (a['dateTime'] as DateTime)
+            .compareTo(b['dateTime'] as DateTime);
+      }
+    });
   }
 
   void _toggleTaskCompletion(int index) {
@@ -63,16 +79,16 @@ class _TaskHomePageState extends State<TaskHomePage> {
       builder: (context) {
         DateTime? selectedDateTime;
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (context, setStateDialog) {
             return AlertDialog(
-              title: const Text('Add task'),
+              title: const Text('Добавить задачу'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
                     controller: _taskController,
                     decoration:
-                        const InputDecoration(hintText: 'Enter your task'),
+                        const InputDecoration(hintText: 'Введите название задачи'),
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -88,7 +104,7 @@ class _TaskHomePageState extends State<TaskHomePage> {
                               lastDate: DateTime(2101),
                             );
                             if (pickedDate != null) {
-                              setState(() {
+                              setStateDialog(() {
                                 if (selectedDateTime != null) {
                                   selectedDateTime = DateTime(
                                     pickedDate.year,
@@ -104,8 +120,8 @@ class _TaskHomePageState extends State<TaskHomePage> {
                             }
                           },
                           child: Text(selectedDateTime == null
-                              ? 'Date'
-                              : 'Date: ${DateFormat('yyyy-MM-dd').format(selectedDateTime!)}'),
+                              ? 'Выбрать дату'
+                              : 'Дата: ${DateFormat('yyyy-MM-dd').format(selectedDateTime!)}'),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -119,7 +135,7 @@ class _TaskHomePageState extends State<TaskHomePage> {
                                   : TimeOfDay.now(),
                             );
                             if (pickedTime != null) {
-                              setState(() {
+                              setStateDialog(() {
                                 if (selectedDateTime != null) {
                                   selectedDateTime = DateTime(
                                     selectedDateTime!.year,
@@ -142,8 +158,8 @@ class _TaskHomePageState extends State<TaskHomePage> {
                             }
                           },
                           child: Text(selectedDateTime == null
-                              ? 'Time'
-                              : 'Time: ${selectedDateTime!.hour.toString().padLeft(2, '0')}:${selectedDateTime!.minute.toString().padLeft(2, '0')}'),
+                              ? 'Выбрать время'
+                              : 'Время: ${selectedDateTime!.hour.toString().padLeft(2, '0')}:${selectedDateTime!.minute.toString().padLeft(2, '0')}'),
                         ),
                       ),
                     ],
@@ -156,14 +172,14 @@ class _TaskHomePageState extends State<TaskHomePage> {
                     _taskController.clear();
                     Navigator.of(context).pop();
                   },
-                  child: const Text('Cancel'),
+                  child: const Text('Отмена'),
                 ),
                 TextButton(
                   onPressed: () {
                     _addTask(_taskController.text, selectedDateTime);
                     Navigator.of(context).pop();
                   },
-                  child: const Text('Add'),
+                  child: const Text('Добавить'),
                 ),
               ],
             );
@@ -180,7 +196,7 @@ class _TaskHomePageState extends State<TaskHomePage> {
         title: const Text('Google Tasks Clone'),
       ),
       body: _tasks.isEmpty
-          ? const Center(child: Text('Task list is empty!'))
+          ? const Center(child: Text('Пока нет задач! Добавьте несколько задач.'))
           : ListView.builder(
               itemCount: _tasks.length,
               itemBuilder: (context, index) {
@@ -211,7 +227,7 @@ class _TaskHomePageState extends State<TaskHomePage> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddTaskDialog,
-        tooltip: 'Add task',
+        tooltip: 'Добавить задачу',
         child: const Icon(Icons.add),
       ),
     );
