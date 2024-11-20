@@ -1,0 +1,5 @@
+package com.example.tasks_clone
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity: FlutterActivity()
