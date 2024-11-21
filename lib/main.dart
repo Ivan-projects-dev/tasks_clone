@@ -87,8 +87,7 @@ class _TaskHomePageState extends State<TaskHomePage> {
                 children: [
                   TextField(
                     controller: _taskController,
-                    decoration:
-                        const InputDecoration(hintText: 'Введите название задачи'),
+                    decoration: const InputDecoration(hintText: 'Введите название задачи'),
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -96,11 +95,11 @@ class _TaskHomePageState extends State<TaskHomePage> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () async {
+                            DateTime now = DateTime.now();
                             DateTime? pickedDate = await showDatePicker(
                               context: context,
-                              initialDate:
-                                  selectedDateTime ?? DateTime.now(),
-                              firstDate: DateTime(2000),
+                              initialDate: selectedDateTime ?? now,
+                              firstDate: now, // Ограничиваем выбор на даты ПОЗЖЕ текущей
                               lastDate: DateTime(2101),
                             );
                             if (pickedDate != null) {
@@ -128,33 +127,31 @@ class _TaskHomePageState extends State<TaskHomePage> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () async {
+                            TimeOfDay nowTime = TimeOfDay.now();
+                            DateTime now = DateTime.now();
                             TimeOfDay? pickedTime = await showTimePicker(
                               context: context,
                               initialTime: selectedDateTime != null
                                   ? TimeOfDay.fromDateTime(selectedDateTime!)
-                                  : TimeOfDay.now(),
+                                  : nowTime,
                             );
                             if (pickedTime != null) {
-                              setStateDialog(() {
-                                if (selectedDateTime != null) {
-                                  selectedDateTime = DateTime(
-                                    selectedDateTime!.year,
-                                    selectedDateTime!.month,
-                                    selectedDateTime!.day,
-                                    pickedTime.hour,
-                                    pickedTime.minute,
-                                  );
-                                } else {
-                                  DateTime now = DateTime.now();
-                                  selectedDateTime = DateTime(
-                                    now.year,
-                                    now.month,
-                                    now.day,
-                                    pickedTime.hour,
-                                    pickedTime.minute,
-                                  );
-                                }
-                              });
+                              DateTime pickedDateTime = DateTime(
+                                selectedDateTime?.year ?? now.year,
+                                selectedDateTime?.month ?? now.month,
+                                selectedDateTime?.day ?? now.day,
+                                pickedTime.hour,
+                                pickedTime.minute,
+                              );
+                              if (pickedDateTime.isBefore(now)) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Нельзя выбрать время раньше текущего')),
+                                );
+                              } else {
+                                setStateDialog(() {
+                                  selectedDateTime = pickedDateTime;
+                                });
+                              }
                             }
                           },
                           child: Text(selectedDateTime == null
@@ -215,8 +212,7 @@ class _TaskHomePageState extends State<TaskHomePage> {
                     ),
                   ),
                   subtitle: task['dateTime'] != null
-                      ? Text(DateFormat('yyyy-MM-dd HH:mm')
-                          .format(task['dateTime']))
+                      ? Text(DateFormat('yyyy-MM-dd HH:mm').format(task['dateTime']))
                       : null,
                   trailing: IconButton(
                     icon: const Icon(Icons.delete),
