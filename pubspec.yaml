@@ -1,20 +1,16 @@
-name: tasks_clone
-description: A new Flutter project.
-
-publish_to: 'none' # Remove this line if you plan to publish the package.
-
+name: task_list
+description: "A new Flutter project."
+publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ">=3.5.4 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_local_notifications: ^18.0.1
-  shared_preferences: ^2.0.0
   intl: ^0.20.0
-  get_storage: ^2.0.3
   timezone: ^0.10.0
 
 dev_dependencies:
@@ -25,23 +21,20 @@ dev_dependencies:
 
 flutter:
   assets:
-    - assets/icon/icon.png
+    - assets/icon.png
   uses-material-design: true
 
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: true
   ios: true
-  image_path: "assets/icon/icon.png" # Ensure this path is correct
-  min_sdk_android: 21
+  image_path: "assets/icon.png"
+  remove_alpha_ios: true
   web:
     generate: true
-    image_path: "assets/icon/icon.png"
-    background_color: "#ffffff"
-    theme_color: "#2196f3"
+    image_path: "assets/icon.png"
   windows:
     generate: true
-    image_path: "assets/icon/icon.png"
-    icon_size: 48
+    image_path: "assets/icon.png"
   macos:
     generate: true
-    image_path: "assets/icon/icon.png"
+    image_path: "assets/icon.png"
