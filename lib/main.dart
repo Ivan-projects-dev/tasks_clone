@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:get_storage/get_storage.dart';
 
-void main() async {
-  await GetStorage.init();
+void main() {
   runApp(const MyApp());
 }
 
@@ -25,7 +23,6 @@ class MyApp extends StatelessWidget {
 
 class TaskHomePage extends StatefulWidget {
   const TaskHomePage({super.key});
-
   @override
   State<TaskHomePage> createState() => _TaskHomePageState();
 }
@@ -33,26 +30,6 @@ class TaskHomePage extends StatefulWidget {
 class _TaskHomePageState extends State<TaskHomePage> {
   final List<Map<String, dynamic>> _tasks = [];
   final TextEditingController _taskController = TextEditingController();
-  final box = GetStorage();
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTasks();
-  }
-
-  void _saveTasks() {
-    box.write('tasks', _tasks);
-  }
-
-  void _loadTasks() {
-    final savedTasks = box.read('tasks');
-    if (savedTasks != null) {
-      setState(() {
-        _tasks.addAll(List<Map<String, dynamic>>.from(savedTasks));
-      });
-    }
-  }
 
   void _addTask(String task, DateTime? dateTime) {
     if (task.isNotEmpty) {
@@ -60,11 +37,10 @@ class _TaskHomePageState extends State<TaskHomePage> {
         _tasks.add({
           'title': task,
           'completed': false,
-          'dateTime': dateTime?.toString(),
+          'dateTime': dateTime,
         });
         _sortTasks();
       });
-      _saveTasks();
       _taskController.clear();
     }
   }
@@ -78,25 +54,17 @@ class _TaskHomePageState extends State<TaskHomePage> {
       } else if (b['dateTime'] == null) {
         return 1;
       } else {
-        return DateTime.parse(a['dateTime'])
-            .compareTo(DateTime.parse(b['dateTime']));
+        return (a['dateTime'] as DateTime).compareTo(b['dateTime'] as DateTime);
       }
     });
   }
 
-  void _toggleTaskCompletion(int index) {
-    setState(() {
-      _tasks[index]['completed'] = !_tasks[index]['completed'];
-    });
-    _saveTasks();
-  }
-
-  void _deleteTask(int index) {
-    setState(() {
-      _tasks.removeAt(index);
-    });
-    _saveTasks();
-  }
+  void _toggleTaskCompletion(int index) => setState(() {
+        _tasks[index]['completed'] = !_tasks[index]['completed'];
+      });
+  void _deleteTask(int index) => setState(() {
+        _tasks.removeAt(index);
+      });
 
   void _showAddTaskDialog() {
     showDialog(
@@ -125,26 +93,29 @@ class _TaskHomePageState extends State<TaskHomePage> {
                             DateTime? pickedDate = await showDatePicker(
                               context: context,
                               initialDate: selectedDateTime ?? now,
-                              firstDate: now,
+                              firstDate:
+                                  now, // Ограничиваем выбор на даты ПОЗЖЕ текущей
                               lastDate: DateTime(2101),
                             );
-                            if (!mounted) return;
                             if (pickedDate != null) {
                               setStateDialog(() {
-                                selectedDateTime = DateTime(
-                                  pickedDate.year,
-                                  pickedDate.month,
-                                  pickedDate.day,
-                                  selectedDateTime?.hour ?? 0,
-                                  selectedDateTime?.minute ?? 0,
-                                );
+                                if (selectedDateTime != null) {
+                                  selectedDateTime = DateTime(
+                                    pickedDate.year,
+                                    pickedDate.month,
+                                    pickedDate.day,
+                                    selectedDateTime!.hour,
+                                    selectedDateTime!.minute,
+                                  );
+                                } else {
+                                  selectedDateTime = pickedDate;
+                                }
                               });
                             }
                           },
                           child: Text(selectedDateTime == null
                               ? 'Выбрать дату'
                               : 'Дата: ${DateFormat('yyyy-MM-dd').format(selectedDateTime!)}'),
-                          // Добавлен оператор ! после selectedDateTime
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -152,31 +123,37 @@ class _TaskHomePageState extends State<TaskHomePage> {
                         child: ElevatedButton(
                           onPressed: () async {
                             TimeOfDay nowTime = TimeOfDay.now();
+                            DateTime now = DateTime.now();
                             TimeOfDay? pickedTime = await showTimePicker(
                               context: context,
                               initialTime: selectedDateTime != null
                                   ? TimeOfDay.fromDateTime(selectedDateTime!)
-                                  // Добавлен оператор ! после selectedDateTime
                                   : nowTime,
                             );
-                            if (!mounted) return;
                             if (pickedTime != null) {
-                              setStateDialog(() {
-                                selectedDateTime = DateTime(
-                                  selectedDateTime?.year ??
-                                      DateTime.now().year,
-                                  selectedDateTime?.month ??
-                                      DateTime.now().month,
-                                  selectedDateTime?.day ?? DateTime.now().day,
-                                  pickedTime.hour,
-                                  pickedTime.minute,
+                              DateTime pickedDateTime = DateTime(
+                                selectedDateTime?.year ?? now.year,
+                                selectedDateTime?.month ?? now.month,
+                                selectedDateTime?.day ?? now.day,
+                                pickedTime.hour,
+                                pickedTime.minute,
+                              );
+                              if (pickedDateTime.isBefore(now)) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          'Нельзя выбрать время раньше текущего')),
                                 );
-                              });
+                              } else {
+                                setStateDialog(() {
+                                  selectedDateTime = pickedDateTime;
+                                });
+                              }
                             }
                           },
                           child: Text(selectedDateTime == null
                               ? 'Выбрать время'
-                              : 'Время: ${selectedDateTime?.hour.toString().padLeft(2, '0') ?? '00'}:${selectedDateTime?.minute.toString().padLeft(2, '0') ?? '00'}'),
+                              : 'Время: ${selectedDateTime!.hour.toString().padLeft(2, '0')}:${selectedDateTime!.minute.toString().padLeft(2, '0')}'),
                         ),
                       ),
                     ],
@@ -193,8 +170,7 @@ class _TaskHomePageState extends State<TaskHomePage> {
                 ),
                 TextButton(
                   onPressed: () {
-                    _addTask(
-                        _taskController.text, selectedDateTime ?? DateTime.now());
+                    _addTask(_taskController.text, selectedDateTime);
                     Navigator.of(context).pop();
                   },
                   child: const Text('Добавить'),
@@ -211,7 +187,7 @@ class _TaskHomePageState extends State<TaskHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Google Tasks Clone'),
+        title: const Text('Tasks'),
       ),
       body: _tasks.isEmpty
           ? const Center(
@@ -235,7 +211,7 @@ class _TaskHomePageState extends State<TaskHomePage> {
                   ),
                   subtitle: task['dateTime'] != null
                       ? Text(DateFormat('yyyy-MM-dd HH:mm')
-                          .format(DateTime.parse(task['dateTime'])))
+                          .format(task['dateTime']))
                       : null,
                   trailing: IconButton(
                     icon: const Icon(Icons.delete),
